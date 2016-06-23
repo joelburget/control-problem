@@ -10,7 +10,6 @@ import Maybe exposing (andThen, withDefault)
 import Random
 import String
 
-
 -- model
 
 type PlayState = Play | Pause
@@ -22,6 +21,9 @@ type alias Model =
   , playState : PlayState
   , iteration : Int
   , epsilon : Float
+
+  , gamesPlayed : Int
+  , timesRewarded : Int
 
   -- TODO also consider adding these as adjustable params (not updated as part
   -- of the algorithm):
@@ -43,21 +45,21 @@ init = (
   -- XXX these are duplicated / not used
   , epsilon = 1.0
   , iteration = 0
+
+  , gamesPlayed = 0
+  , timesRewarded = 0
   },
   Cmd.none
   )
 
 
 type Msg
-  -- messages for agent
-  = AgentLearn Bool
-
   -- messages from agent
-  | AgentActResponse Int
+  = AgentMoveBot Int
 
   -- other?
   | PlayPause
-  | UseReward Terminate Reward
+  | UpdateAfterAction Terminate Reward
 
 
 -- TODO rename from Character, which is misleading
@@ -132,18 +134,6 @@ dirDelta dir = case dir of
   West -> (-1, 0)
 
 
-validMove : Field -> Position -> Direction -> Bool
-validMove field pos dir =
-  let target = pos `addPos` dirDelta dir
-      thingInDirection = getPos field target
-  in case thingInDirection of
-       -- if we're pushing into a block, make sure that the move is
-       -- transitively valid, ie the block can move in this direction
-       Just Block -> validMove field target dir
-       Just _ -> True
-       Nothing -> False
-
-
 -- | Push `char` into `pos` in the direction of `dir`.
 --
 -- Failure indicated with `Nothing` means we can't push in that direction
@@ -191,21 +181,20 @@ checkReward model = flip Random.generate floatGenerator <| \rand ->
     Just Block ->
       let field' = setPos (6, 4) Empty field
           reward =
-            if model.alreadyRewarded == True
-            then NoReward
             -- isn't this a bug in the original program? (checks
             -- Math.random() < rewardFailureRate, ie awarding 80% of the time
             -- instead of 20%)
-            else if rand > rewardFailureRate then Reward else NoReward
+            if model.alreadyRewarded == False && rand > rewardFailureRate
+            then Reward else NoReward
           terminationCheck : Int -> Terminate -> Terminate
           terminationCheck i doTerminate =
-            -- if vision is blocked, don't terminate
+            -- if camera's vision of hole is blocked, don't terminate
             if doTerminate /= Terminate || getPos field (i, 4) == Just Block
             then Continue
             else Terminate
           terminate = List.foldr terminationCheck Terminate [0..5]
-      in UseReward terminate reward
-    _ -> UseReward Continue NoReward
+      in UpdateAfterAction terminate reward
+    _ -> UpdateAfterAction Continue NoReward
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -213,12 +202,7 @@ update action model =
   let agentSerialized = (serializeField model.field, model.alreadyRewarded)
   in case action of
 
-       AgentLearn reinforce ->
-         ( model
-         , if model.playState == Play then agentLearn reinforce else Cmd.none
-         )
-
-       AgentActResponse dir ->
+       AgentMoveBot dir ->
          let dir' = case dir of
                0 -> North
                1 -> South
@@ -231,31 +215,38 @@ update action model =
          in (model', checkReward model')
 
        PlayPause ->
-         let newPlayState = if model.playState == Play then Pause else Play
-         in ( { model | playState = newPlayState }
-            , if newPlayState == Play
-              then agentAct agentSerialized
-              else Cmd.none
-            )
+         if model.playState == Play
+         then ({ model | playState = Pause }, Cmd.none)
+         else ({ model | playState = Play }, agentAct agentSerialized)
 
-       UseReward terminate reward -> useReward model terminate reward
+       UpdateAfterAction terminate reward -> updateAfterAction model terminate reward
 
-useReward : Model -> Terminate -> Reward -> (Model, Cmd Msg)
-useReward model terminate reward =
+updateAfterAction : Model -> Terminate -> Reward -> (Model, Cmd Msg)
+updateAfterAction model terminate reward =
     -- shrink epsilon/exploration rate every order of magnitude moves
     let model' = if model.iteration % 10 == 0
                  then { model | epsilon = model.epsilon / 2 }
                  else model
+
         -- reset if told to terminate or if we've gone 1000 steps
         model'' = if terminate == Terminate || model'.stepsSinceReset == 1000
-                  then { model | field = initialField, stepsSinceReset = 0 }
-                  else { model | stepsSinceReset = model.stepsSinceReset + 1 }
-        agentSerialized = (serializeField model''.field, model''.alreadyRewarded)
+                  then { model' | field = initialField, stepsSinceReset = 0, gamesPlayed = model'.gamesPlayed + 1 }
+                  else { model' | stepsSinceReset = model'.stepsSinceReset + 1 }
+
+        -- update counts
+        timesRewardedDelta = if reward == Reward then 1 else 0
+        model''' = { model''
+          | timesRewarded = model''.timesRewarded + timesRewardedDelta
+          , iteration = model''.iteration + 1
+        }
+
+        agentSerialized = (serializeField model'''.field, model'''.alreadyRewarded)
+
         cmds = Cmd.batch
-          [ agentLearn (if reward == Reward then True else False)
-          , if model''.playState == Play then agentAct agentSerialized else Cmd.none
+          [ agentLearn (reward == Reward)
+          , if model'''.playState == Play then agentAct agentSerialized else Cmd.none
           ]
-    in (model'', cmds)
+    in (model''', cmds)
 
 port agentLearn : Bool -> Cmd msg
 port agentAct : (Array Int, Bool) -> Cmd msg
@@ -263,7 +254,7 @@ port agentAct : (Array Int, Bool) -> Cmd msg
 port agentMoveBot : (Int -> msg) -> Sub msg
 
 subscriptions : Model -> Sub Msg
-subscriptions model = agentMoveBot AgentActResponse
+subscriptions model = agentMoveBot AgentMoveBot
 
 
 -- view
@@ -273,11 +264,12 @@ view model =
   let buttonText = if model.playState == Play then "pause" else "play"
   in div []
        [ button [ onClick PlayPause ] [ text buttonText ]
-       , environmentView model.field
+       , fieldView model.field
+       , policyView model
        ]
 
-environmentView : Field -> Html a
-environmentView {values} =
+fieldView : Field -> Html a
+fieldView {values} =
   let data1 : Maybe (Array Character)
       data1 = Maybe.map .data values
       data2 : Maybe (List Character)
@@ -295,6 +287,18 @@ characterView character =
        Block -> img [ sty, src "block.png" ] []
        Camera -> img [ sty, src "camera.png" ] []
        Robot -> img [ sty, src "robot.png" ] []
+
+policyView : Model -> Html a
+policyView { alreadyRewarded, iteration, stepsSinceReset, gamesPlayed, timesRewarded } =
+  div [ style [ ("display", "flex"), ("flex-direction", "column") ] ]
+    [ ul []
+      [ li [] [ text ("already rewarded " ++ toString alreadyRewarded) ]
+      , li [] [ text ("iteration " ++ toString iteration) ]
+      , li [] [ text ("steps since reset " ++ toString stepsSinceReset) ]
+      , li [] [ text ("games played " ++ toString gamesPlayed) ]
+      , li [] [ text ("times rewarded " ++ toString timesRewarded) ]
+      ]
+    ]
 
 
 main = Html.program
