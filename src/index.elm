@@ -157,7 +157,7 @@ characterView character =
        Person -> div [ pSty ] []
 
 policyView : SimulationState -> Html a
-policyView { alreadyRewarded, iteration, stepsSinceReset, gamesPlayed, timesRewarded } =
+policyView { alreadyRewarded, iteration, stepsSinceReset, gamesPlayed, timesRewarded, epsilon } =
   div [ style [ ("display", "flex"), ("flex-direction", "column") ] ]
     [ ul []
       [ li [] [ text ("already rewarded " ++ toString alreadyRewarded) ]
@@ -165,6 +165,7 @@ policyView { alreadyRewarded, iteration, stepsSinceReset, gamesPlayed, timesRewa
       , li [] [ text ("steps since reset " ++ toString stepsSinceReset) ]
       , li [] [ text ("games played " ++ toString gamesPlayed) ]
       , li [] [ text ("times rewarded " ++ toString timesRewarded) ]
+      , li [] [ text ("epsilon " ++ toString epsilon) ]
       ]
     ]
 
