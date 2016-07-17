@@ -127,6 +127,7 @@ view model =
   let buttonText = if model.playState == Play then "pause" else "play"
   in div []
        [ h2 [] [ text model.gameModel.name ]
+       , p [] [ text model.gameModel.description ]
        , button [ onClick PlayPause ] [ text buttonText ]
        , fieldView model.field
        , policyView model

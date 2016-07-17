@@ -85,6 +85,7 @@ checkReward field alreadyRewarded = flip Random.generate floatGenerator <| \rand
 model : GameModel
 model =
   { name = "Gridworld"
+  , description = "The original toy model of the control problem"
   , moveBot = moveBot
   , checkReward = checkReward
   , initField = initField
