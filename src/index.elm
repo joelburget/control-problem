@@ -135,14 +135,15 @@ view model =
 
 fieldView : Field -> Html a
 fieldView {values} =
-  let data1 : Maybe (Array Character)
-      data1 = Maybe.map .data values
-      data2 : Maybe (List Character)
-      data2 = Maybe.map Array.toList data1
-      -- data3 : Maybe (VirtualDom.Node a)
-      data3 = Maybe.map (List.map characterView) data2
-      rows = div [ style [ ("display", "flex"), ("flex-flow", "row wrap"), ("width", "224px") ] ]
-  in withDefault (text "error") (Maybe.map rows data3)
+  let characters = Maybe.map
+        (.data >> Array.toList >> List.map characterView)
+        values
+      rows = div [ style [ ("display", "flex")
+                         , ("flex-flow", "row wrap")
+                         , ("width", "224px")
+                         ]
+                 ]
+  in withDefault (text "error") (Maybe.map rows characters)
 
 characterView : Character -> Html a
 characterView character =
