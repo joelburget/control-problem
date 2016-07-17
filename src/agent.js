@@ -25,4 +25,12 @@ app.ports.agentAct.subscribe(function(args) {
   app.ports.agentMoveBot.send(action);
 });
 
-app.ports.agentLearn.subscribe(agent.learn);
+// app.ports.agentLearn.subscribe(agent.learn);
+app.ports.agentLearn.subscribe(function(reward) {
+  agent.learn(reward);
+  var x = agent.toJSON();
+  // nh: num hidden units
+  // na: max num actions
+  // ns: num states
+  // app.ports.agentLearned.send(x.net);
+});
