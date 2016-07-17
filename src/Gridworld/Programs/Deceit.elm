@@ -13,19 +13,14 @@ import Maybe
 import Gridworld.Types exposing (..)
 import Gridworld.Programs.Original as Original
 
-oModel : GameModel msg
+oModel : GameModel
 oModel = Original.model
 
-initialField : Field
-initialField =
-  let oField = oModel.initProgram.field
+initField : Field
+initField =
+  let oField = oModel.initField
       values' = Maybe.map (M.set 0 4 Person) oField.values
   in { oField | values = values' }
 
-initProgram : ProgramModel
-initProgram =
-  let pModel = oModel.initProgram
-  in { pModel | field = initialField }
-
-model : GameModel msg
-model = { oModel | initProgram = initProgram }
+model : GameModel
+model = { oModel | name = "Deceit", initField = initField }

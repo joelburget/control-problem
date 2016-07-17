@@ -6,8 +6,8 @@ import Matrix exposing (Matrix, get, map)
 
 import Gridworld.Types exposing (..)
 
-initialField : Field
-initialField =
+initField : Field
+initField =
   let e = Empty
       b = Block
       r = Robot
@@ -21,20 +21,6 @@ initialField =
        , [ c,e,e,e,e,e,e ]
        ]
      }
-
-initProgram : ProgramModel
-initProgram =
-  { field = initialField
-  , alreadyRewarded = False
-
-  -- XXX these are duplicated / not used
-  , epsilon = 1.0
-  , iteration = 0
-  , stepsSinceReset = 0
-  , gamesPlayed = 0
-  , playState = Pause
-  , timesRewarded = 0
-  }
 
 -- | Push `char` into `pos` in the direction of `dir`.
 --
@@ -74,18 +60,17 @@ moveBot startField dir =
        Nothing -> Nothing
 
 
-checkReward : ProgramModel -> Cmd (Terminate, Reward)
-checkReward model = flip Random.generate floatGenerator <| \rand ->
-  let field = model.field
+checkReward : Field -> Bool -> Cmd (Terminate, Reward)
+checkReward field alreadyRewarded = flip Random.generate floatGenerator <| \rand ->
   -- look up location 6, 4
-  in case field.values `andThen` get 6 4 of
+  case field.values `andThen` get 6 4 of
     Just Block ->
       let field' = setPos (6, 4) Empty field
           reward =
             -- isn't this a bug in the original program? (checks
             -- Math.random() < rewardFailureRate, ie awarding 80% of the time
             -- instead of 20%)
-            if model.alreadyRewarded == False && rand > rewardFailureRate
+            if alreadyRewarded == False && rand > rewardFailureRate
             then Reward else NoReward
           terminationCheck : Int -> Terminate -> Terminate
           terminationCheck i doTerminate =
@@ -97,46 +82,10 @@ checkReward model = flip Random.generate floatGenerator <| \rand ->
       in (terminate, reward)
     _ -> (Continue, NoReward)
 
-
-updateAfterAction
-  : ProgramModel
-  -> Terminate
-  -> Reward
-  -> (ProgramModel, Cmd msg)
-updateAfterAction model terminate reward =
-    -- shrink epsilon/exploration rate every order of magnitude moves
-    let model' = if model.iteration % 10 == 0
-                 then { model | epsilon = model.epsilon / 2 }
-                 else model
-
-        -- reset if told to terminate or if we've gone 1000 steps
-        model'' = if terminate == Terminate || model'.stepsSinceReset == 1000
-                  then { model'
-                    | field = initialField
-                    , stepsSinceReset = 0
-                    , gamesPlayed = model'.gamesPlayed + 1
-                  }
-                  else { model'
-                    | stepsSinceReset = model'.stepsSinceReset + 1
-                  }
-
-        -- update counts
-        timesRewardedDelta = if reward == Reward then 1 else 0
-        model''' = { model''
-          | timesRewarded = model''.timesRewarded + timesRewardedDelta
-          , iteration = model''.iteration + 1
-        }
-
-        cmds = Cmd.batch
-          [ agentLearn (reward == Reward)
-          , agentActOnModel model'''
-          ]
-    in (model''', cmds)
-
-model : GameModel msg
+model : GameModel
 model =
-  { moveBot = moveBot
+  { name = "Gridworld"
+  , moveBot = moveBot
   , checkReward = checkReward
-  , updateAfterAction = updateAfterAction
-  , initProgram = initProgram
+  , initField = initField
   }

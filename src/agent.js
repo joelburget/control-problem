@@ -34,3 +34,7 @@ app.ports.agentLearn.subscribe(function(reward) {
   // ns: num states
   // app.ports.agentLearned.send(x.net);
 });
+
+// app.ports.isMagnitude.subscribe(function(num) {
+//   return Number.isInteger(Math.log10(num));
+// });

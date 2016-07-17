@@ -15,7 +15,7 @@ import Gridworld.Types exposing (..)
 import Gridworld.Programs.Original as Original
 import Gridworld.Programs.Deceit as Deceit
 
-dModel : GameModel msg
+dModel : GameModel
 dModel = Deceit.model
 
 type Msg
@@ -26,11 +26,35 @@ type Msg
   | PlayPause
   | UpdateAfterAction Terminate Reward
 
+initProgram : SimulationState
+initProgram =
+  { gameModel = dModel
+  , field = dModel.initField
+  , alreadyRewarded = False
+
+  -- XXX these are duplicated / not used
+  , epsilon = 1.0
+  , iteration = 0
+  , stepsSinceReset = 0
+  , gamesPlayed = 0
+  , playState = Pause
+  , timesRewarded = 0
+  }
+
+
+-- hack to determine if this is an order of magnitude number (10, 100, 1000)
+isMagnitude : Int -> Bool
+isMagnitude i =
+  let log = logBase 10 (toFloat i)
+      rounded = toFloat (round log)
+      epsilon = 0.000000001
+  in abs (rounded - log) < epsilon
+
 -- | The main update loop for the app. Respond to:
 -- * user actions (PlayPause)
 -- * agent instructions (AgentMoveBot)
 -- * next steps (UpdateAfterAction)
-update : Msg -> ProgramModel -> (ProgramModel, Cmd Msg)
+update : Msg -> SimulationState -> (SimulationState, Cmd Msg)
 update action model = case action of
 
    AgentMoveBot dir ->
@@ -39,32 +63,71 @@ update action model = case action of
            1 -> South
            2 -> West
            _ -> East
-         field' = dModel.moveBot model.field dir'
+         field' = model.gameModel.moveBot model.field dir'
          model' = case field' of
            Just field'' -> { model | field = field'' }
            Nothing -> model
-     in (model', Cmd.map (\(t, r) -> UpdateAfterAction t r) (dModel.checkReward model'))
+     in (model', Cmd.map (\(t, r) -> UpdateAfterAction t r) (model'.gameModel.checkReward model'.field model'.alreadyRewarded))
 
    PlayPause ->
      let model' =
        if model.playState == Play
        then { model | playState = Pause }
        else { model | playState = Play }
-     in (model', agentActOnModel model')
+     in (model', agentActOnState model')
 
-   UpdateAfterAction terminate reward -> dModel.updateAfterAction model terminate reward
+   UpdateAfterAction terminate reward -> updateAfterAction model terminate reward
 
-subscriptions : ProgramModel -> Sub Msg
+
+updateAfterAction
+  : SimulationState
+  -> Terminate
+  -> Reward
+  -> (SimulationState, Cmd msg)
+updateAfterAction state terminate reward =
+  -- shrink epsilon/exploration rate every order of magnitude moves
+  let
+      state' = if isMagnitude state.iteration
+               then { state | epsilon = state.epsilon / 2 }
+               else state
+
+      -- reset if told to terminate or if we've gone 1000 steps
+      state'' = if terminate == Terminate || state'.stepsSinceReset == 1000
+                then { state'
+                  | field = state.gameModel.initField
+                  , stepsSinceReset = 0
+                  , gamesPlayed = state'.gamesPlayed + 1
+                }
+                else { state'
+                  | stepsSinceReset = state'.stepsSinceReset + 1
+                }
+
+      -- update counts
+      timesRewardedDelta = if reward == Reward then 1 else 0
+      state''' = { state''
+        | timesRewarded = state''.timesRewarded + timesRewardedDelta
+        , iteration = state''.iteration + 1
+      }
+
+      cmds = Cmd.batch
+        [ agentLearn (reward == Reward)
+        , agentActOnState state'''
+        ]
+  in (state''', cmds)
+
+
+subscriptions : SimulationState -> Sub Msg
 subscriptions model = agentMoveBot AgentMoveBot
 
 
 -- view
 
-view : ProgramModel -> Html Msg
+view : SimulationState -> Html Msg
 view model =
   let buttonText = if model.playState == Play then "pause" else "play"
   in div []
-       [ button [ onClick PlayPause ] [ text buttonText ]
+       [ h2 [] [ text model.gameModel.name ]
+       , button [ onClick PlayPause ] [ text buttonText ]
        , fieldView model.field
        , policyView model
        ]
@@ -91,7 +154,7 @@ characterView character =
        Robot -> img [ sty, src "robot.png" ] []
        Person -> div [ pSty ] []
 
-policyView : ProgramModel -> Html a
+policyView : SimulationState -> Html a
 policyView { alreadyRewarded, iteration, stepsSinceReset, gamesPlayed, timesRewarded } =
   div [ style [ ("display", "flex"), ("flex-direction", "column") ] ]
     [ ul []
@@ -105,7 +168,7 @@ policyView { alreadyRewarded, iteration, stepsSinceReset, gamesPlayed, timesRewa
 
 
 main = Html.program
-  { init = (dModel.initProgram, Cmd.none)
+  { init = (initProgram, Cmd.none)
   , view = view
   , update = update
   , subscriptions = subscriptions

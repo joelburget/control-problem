@@ -38,8 +38,21 @@ serializeField {values} =
        Just {data} -> Array.map cToI data
        Nothing -> Array.empty
 
-type alias ProgramModel =
-  { field : Field
+
+-- models
+
+type alias GameModel =
+  { name : String
+  , moveBot : Field -> Direction -> Maybe Field
+  , checkReward : Field -> Bool -> Cmd (Terminate, Reward)
+  , initField : Field
+  }
+
+-- checkReward: field, alreadyRewarded
+-- updateAfterAction: field, iteration, epsilon, stepsSinceReset, gamesPlayed, timesRewarded
+type alias SimulationState =
+  { gameModel : GameModel
+  , field : Field
   , alreadyRewarded : Bool
   , stepsSinceReset : Int
   , playState : PlayState
@@ -58,19 +71,6 @@ type alias ProgramModel =
   -- experience_size: 20000,
   -- alpha: 0.01,
   -- gamma: 0.99
-  }
-
--- models
-
-type alias GameModel msg =
-  { moveBot : Field -> Direction -> Maybe Field
-  , checkReward : ProgramModel -> Cmd (Terminate, Reward)
-  , updateAfterAction
-      : ProgramModel
-      -> Terminate
-      -> Reward
-      -> (ProgramModel, Cmd msg)
-  , initProgram : ProgramModel
   }
 
 
@@ -126,9 +126,9 @@ port agentMoveBot : (Int -> msg) -> Sub msg
 
 
 -- | Tell the agent to act on this model
-agentActOnModel : ProgramModel -> Cmd msg
-agentActOnModel model =
-  let agentSerialized = (serializeField model.field, model.alreadyRewarded)
-  in if model.playState == Pause
+agentActOnState : SimulationState -> Cmd msg
+agentActOnState state =
+  let agentSerialized = (serializeField state.field, state.alreadyRewarded)
+  in if state.playState == Pause
      then Cmd.none
      else agentAct agentSerialized
