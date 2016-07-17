@@ -122,6 +122,10 @@ subscriptions model = agentMoveBot AgentMoveBot
 
 -- view
 
+-- TODO add Gaze
+prepareFieldForView : Field -> Field
+prepareFieldForView = setPos (6, 4) Hole
+
 view : SimulationState -> Html Msg
 view model =
   let buttonText = if model.playState == Play then "pause" else "play"
@@ -129,7 +133,7 @@ view model =
        [ h2 [] [ text model.gameModel.name ]
        , p [] [ text model.gameModel.description ]
        , button [ onClick PlayPause ] [ text buttonText ]
-       , fieldView model.field
+       , fieldView (prepareFieldForView model.field)
        , policyView model
        ]
 
@@ -148,13 +152,18 @@ fieldView {values} =
 characterView : Character -> Html a
 characterView character =
   let sty = style [ ("width", "32px"), ("height", "32px") ]
-      pSty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "black") ]
+      pSty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "rgb(139, 175, 255)") ]
+      holeSty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "black") ]
+      viewSty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "rgba(210, 255, 198, 1)") ]
   in case character of
-       Empty -> div [ sty ] []
        Block -> img [ sty, src "block.png" ] []
        Camera -> img [ sty, src "camera.png" ] []
        Robot -> img [ sty, src "robot.png" ] []
        Person -> div [ pSty ] []
+
+       Empty -> div [ sty ] []
+       Gaze -> div [ viewSty ] []
+       Hole -> div [ holeSty ] []
 
 policyView : SimulationState -> Html a
 policyView { alreadyRewarded, iteration, stepsSinceReset, gamesPlayed, timesRewarded, epsilon } =

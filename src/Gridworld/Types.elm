@@ -15,8 +15,11 @@ type Character
   = Block
   | Robot
   | Camera
-  | Empty
   | Person
+
+  | Empty
+  | Hole
+  | Gaze
 
 -- | The playing field
 --
@@ -34,6 +37,11 @@ serializeField {values} =
         Robot -> 2
         Camera -> 4
         Person -> 8
+
+        -- we never serialize `Hole` or `Gaze` -- they're for display only
+        -- (they should never end up here, they're only ever instantiated *in*
+        -- the view function
+        _ -> -1
   in case values of
        Just {data} -> Array.map cToI data
        Nothing -> Array.empty
