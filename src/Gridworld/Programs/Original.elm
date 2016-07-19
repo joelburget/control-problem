@@ -22,10 +22,11 @@ initField =
        ]
      }
 
--- | Push `char` into `pos` in the direction of `dir`.
---
--- Failure indicated with `Nothing` means we can't push in that direction
--- because we hit a wall.
+{-| Push `char` into `pos` in the direction of `dir`.
+
+Failure indicated with `Nothing` means we can't push in that direction
+because we hit a wall.
+-}
 push : Position -> Direction -> Character -> Field -> Maybe Field
 push pos dir char field =
   let nextPos = pos `addPos` dirDelta dir
@@ -46,6 +47,7 @@ push pos dir char field =
   -- Now that we've moved the occupying character out of the way (or not)
   -- overwrite that spot.
   in Maybe.map (setPos pos char) field'
+
 
 moveBot : Field -> Direction -> Maybe Field
 moveBot startField dir =

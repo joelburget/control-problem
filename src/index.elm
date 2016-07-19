@@ -52,10 +52,11 @@ isMagnitude i =
       epsilon = 0.000000001
   in abs (rounded - log) < epsilon
 
--- | The main update loop for the app. Respond to:
--- * user actions (PlayPause, StepForward)
--- * agent instructions (AgentMoveBot)
--- * next steps (UpdateAfterAction)
+{-| The main update loop for the app. Respond to:
+* user actions (PlayPause, StepForward)
+* agent instructions (AgentMoveBot)
+* next steps (UpdateAfterAction)
+-}
 update : Msg -> SimulationState -> (SimulationState, Cmd Msg)
 update action model = case action of
 
