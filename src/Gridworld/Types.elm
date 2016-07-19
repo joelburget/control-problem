@@ -132,12 +132,3 @@ rewardFailureRate = 0.8
 port agentLearn : Bool -> Cmd msg
 port agentAct : (Array Int, Bool) -> Cmd msg
 port agentMoveBot : (Int -> msg) -> Sub msg
-
-
--- | Tell the agent to act on this model
-agentActOnState : SimulationState -> Cmd msg
-agentActOnState state =
-  let agentSerialized = (serializeField state.field, state.alreadyRewarded)
-  in if state.playState == Pause
-     then Cmd.none
-     else agentAct agentSerialized

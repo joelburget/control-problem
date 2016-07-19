@@ -24,6 +24,7 @@ type Msg
 
   -- other?
   | PlayPause
+  | StepForward
   | SetModel GameModel
   | UpdateAfterAction Terminate Reward
 
@@ -52,7 +53,7 @@ isMagnitude i =
   in abs (rounded - log) < epsilon
 
 -- | The main update loop for the app. Respond to:
--- * user actions (PlayPause)
+-- * user actions (PlayPause, StepForward)
 -- * agent instructions (AgentMoveBot)
 -- * next steps (UpdateAfterAction)
 update : Msg -> SimulationState -> (SimulationState, Cmd Msg)
@@ -71,15 +72,24 @@ update action model = case action of
     in (model', Cmd.map (\(t, r) -> UpdateAfterAction t r) (model'.gameModel.checkReward model'.field model'.alreadyRewarded))
 
   PlayPause ->
-    let model' =
-      if model.playState == Play
-      then { model | playState = Pause }
-      else { model | playState = Play }
-    in (model', agentActOnState model')
+    if model.playState == Play
+    then ({ model | playState = Pause }, Cmd.none)
+    else let model' = { model | playState = Play }
+         in (model', agentActSerialized model')
+
+  StepForward -> (model, agentActSerialized model)
 
   UpdateAfterAction terminate reward -> updateAfterAction model terminate reward
 
   SetModel gameModel -> ({ model | gameModel = gameModel }, Cmd.none)
+
+
+{-| Tell the agent to act on this model
+-}
+agentActSerialized : SimulationState -> Cmd msg
+agentActSerialized state =
+  let agentSerialized = (serializeField state.field, state.alreadyRewarded)
+  in agentAct agentSerialized
 
 
 updateAfterAction
@@ -114,7 +124,9 @@ updateAfterAction state terminate reward =
 
       cmds = Cmd.batch
         [ agentLearn (reward == Reward)
-        , agentActOnState state'''
+        , if state'''.playState == Play
+          then agentActSerialized state'''
+          else Cmd.none
         ]
   in (state''', cmds)
 
@@ -150,7 +162,10 @@ view model =
          ]
        , h2 [] [ text model.gameModel.name ]
        , p [] [ text model.gameModel.description ]
-       , button [ onClick PlayPause ] [ text buttonText ]
+       , div []
+         [ button [ onClick PlayPause ] [ text buttonText ]
+         , button [ onClick StepForward ] [ text ">" ]
+         ]
        , fieldView (prepareFieldForView model.field)
        , policyView model
        ]
