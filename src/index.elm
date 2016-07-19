@@ -24,6 +24,7 @@ type Msg
 
   -- other?
   | PlayPause
+  | SetModel GameModel
   | UpdateAfterAction Terminate Reward
 
 initProgram : SimulationState
@@ -57,26 +58,28 @@ isMagnitude i =
 update : Msg -> SimulationState -> (SimulationState, Cmd Msg)
 update action model = case action of
 
-   AgentMoveBot dir ->
-     let dir' = case dir of
-           0 -> North
-           1 -> South
-           2 -> West
-           _ -> East
-         field' = model.gameModel.moveBot model.field dir'
-         model' = case field' of
-           Just field'' -> { model | field = field'' }
-           Nothing -> model
-     in (model', Cmd.map (\(t, r) -> UpdateAfterAction t r) (model'.gameModel.checkReward model'.field model'.alreadyRewarded))
+  AgentMoveBot dir ->
+    let dir' = case dir of
+          0 -> North
+          1 -> South
+          2 -> West
+          _ -> East
+        field' = model.gameModel.moveBot model.field dir'
+        model' = case field' of
+          Just field'' -> { model | field = field'' }
+          Nothing -> model
+    in (model', Cmd.map (\(t, r) -> UpdateAfterAction t r) (model'.gameModel.checkReward model'.field model'.alreadyRewarded))
 
-   PlayPause ->
-     let model' =
-       if model.playState == Play
-       then { model | playState = Pause }
-       else { model | playState = Play }
-     in (model', agentActOnState model')
+  PlayPause ->
+    let model' =
+      if model.playState == Play
+      then { model | playState = Pause }
+      else { model | playState = Play }
+    in (model', agentActOnState model')
 
-   UpdateAfterAction terminate reward -> updateAfterAction model terminate reward
+  UpdateAfterAction terminate reward -> updateAfterAction model terminate reward
+
+  SetModel gameModel -> ({ model | gameModel = gameModel }, Cmd.none)
 
 
 updateAfterAction
@@ -122,6 +125,16 @@ subscriptions model = agentMoveBot AgentMoveBot
 
 -- view
 
+radio : String -> GameModel -> Html Msg
+radio selectedName model =
+  let isSelected = model.name == selectedName
+  in
+    label []
+      [ br [] []
+      , input [ type' "radio", checked isSelected, onCheck (\_ -> SetModel model) ] []
+      , text model.name
+      ]
+
 -- TODO add Gaze
 prepareFieldForView : Field -> Field
 prepareFieldForView = setPos (6, 4) Hole
@@ -129,8 +142,13 @@ prepareFieldForView = setPos (6, 4) Hole
 view : SimulationState -> Html Msg
 view model =
   let buttonText = if model.playState == Play then "pause" else "play"
+      selectedName = model.gameModel.name
   in div []
-       [ h2 [] [ text model.gameModel.name ]
+       [ div []
+         [ radio selectedName Original.model
+         , radio selectedName Deceit.model
+         ]
+       , h2 [] [ text model.gameModel.name ]
        , p [] [ text model.gameModel.description ]
        , button [ onClick PlayPause ] [ text buttonText ]
        , fieldView (prepareFieldForView model.field)
