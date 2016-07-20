@@ -18,6 +18,9 @@ import Gridworld.Programs.Deceit as Deceit
 dModel : GameModel
 dModel = Deceit.model
 
+oModel : GameModel
+oModel = Original.model
+
 type Msg
   -- messages from agent
   = AgentMoveBot Int
@@ -30,8 +33,8 @@ type Msg
 
 initProgram : SimulationState
 initProgram =
-  { gameModel = dModel
-  , field = dModel.initField
+  { gameModel = oModel
+  , field = oModel.initField
   , alreadyRewarded = False
 
   -- XXX these are duplicated / not used
@@ -156,8 +159,9 @@ view : SimulationState -> Html Msg
 view model =
   let buttonText = if model.playState == Play then "pause" else "play"
       selectedName = model.gameModel.name
-  in div []
-       [ div []
+  in div [ class "container" ]
+       [ h1 [] [ text "A Toy Model of the Control Problem" ]
+       , div []
          [ radio selectedName Original.model
          , radio selectedName Deceit.model
          ]
@@ -201,16 +205,24 @@ characterView character =
 
 policyView : SimulationState -> Html a
 policyView { alreadyRewarded, iteration, stepsSinceReset, gamesPlayed, timesRewarded, epsilon } =
-  div [ style [ ("display", "flex"), ("flex-direction", "column") ] ]
-    [ ul []
-      [ li [] [ text ("already rewarded " ++ toString alreadyRewarded) ]
-      , li [] [ text ("iteration " ++ toString iteration) ]
-      , li [] [ text ("steps since reset " ++ toString stepsSinceReset) ]
-      , li [] [ text ("games played " ++ toString gamesPlayed) ]
-      , li [] [ text ("times rewarded " ++ toString timesRewarded) ]
-      , li [] [ text ("epsilon " ++ toString epsilon) ]
-      ]
+  let mkTd : a -> Html b
+      mkTd a = td [] [ text (toString a) ]
+
+      mkTh : String -> Html a
+      mkTh str = td [] [ text str ]
+  in div
+    [ style [ ("display", "flex"), ("flex-direction", "column") ]
+    , class "policy-view"
     ]
+    [ table [] [ tbody []
+      [ tr [] [ mkTh "already rewarded", mkTd alreadyRewarded ]
+      , tr [] [ mkTh "iteration", mkTd iteration ]
+      , tr [] [ mkTh "steps since reset", mkTd stepsSinceReset ]
+      , tr [] [ mkTh "games played", mkTd gamesPlayed ]
+      , tr [] [ mkTh "times rewarded", mkTd timesRewarded ]
+      , tr [] [ mkTh "epsilon", mkTd epsilon ]
+      ]
+    ] ]
 
 
 main = Html.program
