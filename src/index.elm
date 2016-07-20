@@ -61,7 +61,7 @@ isMagnitude i =
 * next steps (UpdateAfterAction)
 -}
 update : Msg -> SimulationState -> (SimulationState, Cmd Msg)
-update action model = case action of
+update action state = case action of
 
   AgentMoveBot dir ->
     let dir' = case dir of
@@ -69,21 +69,21 @@ update action model = case action of
           1 -> South
           2 -> West
           _ -> East
-        field' = model.gameModel.moveBot model.field dir'
-        model' = case field' of
-          Just field'' -> { model | field = field'' }
-          Nothing -> model
-    in (model', Cmd.map (\(t, r) -> UpdateAfterAction t r) (model'.gameModel.checkReward model'.field model'.alreadyRewarded))
+        field' = state.gameModel.moveBot state.field dir'
+        state' = case field' of
+          Just field'' -> { state | field = field'' }
+          Nothing -> state
+    in (state', Cmd.map (\(t, r) -> UpdateAfterAction t r) (state'.gameModel.checkReward state'.field state'.alreadyRewarded))
 
   PlayPause ->
-    if model.playState == Play
-    then ({ model | playState = Pause }, Cmd.none)
-    else let model' = { model | playState = Play }
-         in (model', agentActSerialized model')
+    if state.playState == Play
+    then ({ state | playState = Pause }, Cmd.none)
+    else let state' = { state | playState = Play }
+         in (state', agentActSerialized state')
 
-  StepForward -> (model, agentActSerialized model)
+  StepForward -> (state, agentActSerialized state)
 
-  UpdateAfterAction terminate reward -> updateAfterAction model terminate reward
+  UpdateAfterAction terminate reward -> updateAfterAction state terminate reward
 
   SetModel gameModel ->
     let state = { initProgram
@@ -93,7 +93,7 @@ update action model = case action of
     in (state, Cmd.none)
 
 
-{-| Tell the agent to act on this model
+{-| Tell the agent to act on this state
 -}
 agentActSerialized : SimulationState -> Cmd msg
 agentActSerialized state =
@@ -141,7 +141,7 @@ updateAfterAction state terminate reward =
 
 
 subscriptions : SimulationState -> Sub Msg
-subscriptions model = agentMoveBot AgentMoveBot
+subscriptions state = agentMoveBot AgentMoveBot
 
 
 -- view
@@ -161,23 +161,23 @@ prepareFieldForView : Field -> Field
 prepareFieldForView = setPos (6, 4) Hole
 
 view : SimulationState -> Html Msg
-view model =
-  let buttonText = if model.playState == Play then "pause" else "play"
-      selectedName = model.gameModel.name
+view state =
+  let buttonText = if state.playState == Play then "pause" else "play"
+      selectedName = state.gameModel.name
   in div [ class "container" ]
        [ h1 [] [ text "A Toy Model of the Control Problem" ]
        , div []
          [ radio selectedName Original.model
          , radio selectedName Deceit.model
          ]
-       , h2 [] [ text model.gameModel.name ]
-       , p [] [ text model.gameModel.description ]
+       , h2 [] [ text state.gameModel.name ]
+       , p [] [ text state.gameModel.description ]
        , div []
          [ button [ onClick PlayPause ] [ text buttonText ]
          , button [ onClick StepForward ] [ text ">" ]
          ]
-       , fieldView (prepareFieldForView model.field)
-       , policyView model
+       , fieldView (prepareFieldForView state.field)
+       , policyView state
        ]
 
 fieldView : Field -> Html a
