@@ -124,7 +124,7 @@ floatGenerator : Random.Generator Float
 floatGenerator = Random.float 0 1
 
 rewardFailureRate : Float
-rewardFailureRate = 0.8
+rewardFailureRate = 0.2
 
 
 -- ports

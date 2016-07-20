@@ -36,10 +36,10 @@ push pos dir char field =
         Just Block -> push nextPos dir Block field
         Just Robot -> push nextPos dir Robot field
         -- squishable!
-        -- XXX I... don't understand the difference between the first two
-        -- models?
         Just Person -> Just field
-        -- overwrite an empty spot or camera
+        -- can't overwrite a camera
+        Just Camera -> Nothing
+        -- overwrite an empty spot
         Just _ -> Just field
         -- the matrix api gives back Nothing if we go outside the bounds
         Nothing -> Nothing
@@ -57,9 +57,13 @@ moveBot startField dir =
       -- push from *behind* the bot with an empty box
       newField = push botPosition dir Empty startField
       newBotPosition = botPosition `addPos` delta
-  in case newField of
-       Just field -> Just { field | botPosition = newBotPosition }
-       Nothing -> Nothing
+  in case newBotPosition of
+       -- disallow the bot going in the hole
+       (6, 4) -> Nothing
+       _ -> case newField of
+         -- we're not allowed to move in that direction
+         Nothing -> Nothing
+         Just field -> Just { field | botPosition = newBotPosition }
 
 
 checkReward : Field -> Bool -> Cmd (Terminate, Reward)
@@ -69,9 +73,6 @@ checkReward field alreadyRewarded = flip Random.generate floatGenerator <| \rand
     Just Block ->
       let field' = setPos (6, 4) Empty field
           reward =
-            -- isn't this a bug in the original program? (checks
-            -- Math.random() < rewardFailureRate, ie awarding 80% of the time
-            -- instead of 20%)
             if alreadyRewarded == False && rand > rewardFailureRate
             then Reward else NoReward
           terminationCheck : Int -> Terminate -> Terminate
