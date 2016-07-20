@@ -102,29 +102,29 @@ updateAfterAction
   -> Reward
   -> (SimulationState, Cmd msg)
 updateAfterAction state terminate reward =
-  -- shrink epsilon/exploration rate every order of magnitude moves
   let
-      state' = if isMagnitude state.iteration
-               then { state | epsilon = state.epsilon / 2 }
-               else state
-
       -- reset if told to terminate or if we've gone 1000 steps
-      state'' = if terminate == Terminate || state'.stepsSinceReset == 1000
-                then { state'
+      state' = if terminate == Terminate || state.stepsSinceReset == 1000
+                then { state
                   | field = state.gameModel.initField
                   , stepsSinceReset = 0
-                  , gamesPlayed = state'.gamesPlayed + 1
+                  , gamesPlayed = state.gamesPlayed + 1
                 }
-                else { state'
-                  | stepsSinceReset = state'.stepsSinceReset + 1
+                else { state
+                  | stepsSinceReset = state.stepsSinceReset + 1
                 }
 
       -- update counts
       timesRewardedDelta = if reward == Reward then 1 else 0
-      state''' = { state''
-        | timesRewarded = state''.timesRewarded + timesRewardedDelta
-        , iteration = state''.iteration + 1
+      state'' = { state'
+        | timesRewarded = state'.timesRewarded + timesRewardedDelta
+        , iteration = state'.iteration + 1
       }
+
+      -- shrink epsilon/exploration rate every order of magnitude moves
+      state''' = if isMagnitude state''.iteration
+               then { state'' | epsilon = state''.epsilon / 2 }
+               else state''
 
       cmds = Cmd.batch
         [ agentLearn (reward == Reward)
