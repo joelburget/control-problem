@@ -25,6 +25,6 @@ initField =
 model : GameModel
 model = { oModel
   | name = "Deceit"
-  , description = "Like the original gridworld, except A (drawn as a person) functions like the camera whose vision can be blocked on the bottom row."
+  , description = "Like the original gridworld, except A (drawn as a person (a blue square)) functions like the camera whose vision can be blocked on the bottom row."
   , initField = initField
   }

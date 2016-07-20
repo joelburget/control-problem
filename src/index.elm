@@ -85,7 +85,12 @@ update action model = case action of
 
   UpdateAfterAction terminate reward -> updateAfterAction model terminate reward
 
-  SetModel gameModel -> ({ model | gameModel = gameModel }, Cmd.none)
+  SetModel gameModel ->
+    let state = { initProgram
+        | gameModel = gameModel
+        , field = gameModel.initField
+        }
+    in (state, Cmd.none)
 
 
 {-| Tell the agent to act on this model
