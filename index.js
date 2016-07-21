@@ -8999,7 +8999,13 @@ var _user$project$Gridworld$view = function (state) {
 				A2(
 				_elm_lang$html$Html$div,
 				_elm_lang$core$Native_List.fromArray(
-					[]),
+					[
+						_elm_lang$html$Html_Attributes$style(
+						_elm_lang$core$Native_List.fromArray(
+							[
+								{ctor: '_Tuple2', _0: 'margin', _1: '40px 0'}
+							]))
+					]),
 				_elm_lang$core$Native_List.fromArray(
 					[
 						A2(
