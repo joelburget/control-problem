@@ -162,7 +162,7 @@ prepareFieldForView = setPos (6, 4) Hole
 
 view : SimulationState -> Html Msg
 view state =
-  let buttonText = if state.playState == Play then "pause" else "play"
+  let playClass = if state.playState == Play then "button-depressed" else "button"
       selectedName = state.gameModel.name
   in div [ class "container" ]
        [ h1 [] [ text "A Toy Model of the Control Problem" ]
@@ -173,8 +173,8 @@ view state =
        , h2 [] [ text state.gameModel.name ]
        , p [] [ text state.gameModel.description ]
        , div []
-         [ button [ onClick PlayPause ] [ text buttonText ]
-         , button [ onClick StepForward ] [ text ">" ]
+         [ button [ onClick PlayPause, class playClass ] [ text "play" ]
+         , button [ onClick StepForward, class "button" ] [ text ">" ]
          ]
        , fieldView (prepareFieldForView state.field)
        , policyView state

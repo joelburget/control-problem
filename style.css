@@ -95,3 +95,15 @@ td {
   padding: 0 10px;
   text-align: left;
 }
+
+.button {
+  font-size: 18px;
+  background-color: white;
+  border: 2px solid rgb(65, 65, 66);
+}
+
+.button-depressed {
+  font-size: 18px;
+  background-color: rgb(167, 167, 167);
+  border: 2px solid rgb(223, 223, 227);
+}
