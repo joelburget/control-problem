@@ -176,9 +176,26 @@ view state =
          [ button [ onClick PlayPause, class playClass ] [ text "play" ]
          , button [ onClick StepForward, class "button" ] [ text ">" ]
          ]
-       , fieldView (prepareFieldForView state.field)
+       , div [ style [ ("position", "relative") ] ]
+           (if state.playState == Play
+            then [ overlay, fieldView (prepareFieldForView state.field) ]
+            else [ fieldView (prepareFieldForView state.field) ]
+           )
        , policyView state
        ]
+
+overlay : Html a
+overlay = div
+  [ style [ ("position", "absolute")
+          , ("left", "0")
+          , ("right", "0")
+          , ("top", "0")
+          , ("bottom", "0")
+          , ("opacity", "0.8")
+          , ("-webkit-backdrop-filter", "blur(15px)")
+          ]
+  ]
+  []
 
 fieldView : Field -> Html a
 fieldView {values} =
