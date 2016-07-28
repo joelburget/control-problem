@@ -55,7 +55,7 @@ a:hover {color: #1fadc1}
 p {font-size: 19px;}
 
 h1, h2 {
-  font-family: mononoki;
+  font-family: mononoki, sans-serif;
   font-weight: bold;
 }
 
@@ -76,7 +76,7 @@ h1 {
 }
 
 .policy-view {
-  font-family: mononoki;
+  font-family: mononoki, sans-serif;
   margin-top: 40px;
 }
 

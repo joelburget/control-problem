@@ -172,7 +172,7 @@ view state =
          ]
        , h2 [] [ text state.gameModel.name ]
        , p [] [ text state.gameModel.description ]
-       , div []
+       , div [ style [ ("margin", "40px 0") ] ]
          [ button [ onClick PlayPause, class playClass ] [ text "play" ]
          , button [ onClick StepForward, class "button" ] [ text ">" ]
          ]
