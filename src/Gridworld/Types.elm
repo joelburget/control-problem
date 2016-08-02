@@ -15,7 +15,8 @@ type Character
   = Block
   | Robot
   | Camera
-  | Person
+  | Person1
+  | Person2
 
   | Empty
   | Hole
@@ -36,7 +37,8 @@ serializeField {values} =
         Block -> 1
         Robot -> 2
         Camera -> 4
-        Person -> 8
+        Person1 -> 8
+        Person2 -> 16
 
         -- we never serialize `Hole` or `Gaze` -- they're for display only
         -- (they should never end up here, they're only ever instantiated *in*
@@ -108,6 +110,9 @@ addPos (x, y) (dx, dy) = (x + dx, y + dy)
 
 subPos : Position -> Vector -> Position
 subPos (x, y) (dx, dy) = (x - dx, y - dy)
+
+scaleVec : Vector -> Int -> Vector
+scaleVec (dx, dy) c = (c * dx, c * dy)
 
 dirDelta : Direction -> Vector
 dirDelta dir = case dir of

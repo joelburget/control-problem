@@ -19,7 +19,7 @@ oModel = Original.model
 initField : Field
 initField =
   let oField = oModel.initField
-      values' = Maybe.map (M.set 0 4 Person) oField.values
+      values' = Maybe.map (M.set 0 4 Person1) oField.values
   in { oField | values = values' }
 
 model : GameModel

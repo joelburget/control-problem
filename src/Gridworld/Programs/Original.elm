@@ -26,6 +26,9 @@ initField =
 
 Failure indicated with `Nothing` means we can't push in that direction
 because we hit a wall.
+
+We implement some rules (Person1, Person2) that aren't needed in this example
+so we can reuse push / moveBot in other examples.
 -}
 push : Position -> Direction -> Character -> Field -> Maybe Field
 push pos dir char field =
@@ -35,8 +38,9 @@ push pos dir char field =
       field' = case occupyingChar of
         Just Block -> push nextPos dir Block field
         Just Robot -> push nextPos dir Robot field
-        -- squishable!
-        Just Person -> Just field
+        -- peopla are squishable!
+        Just Person1 -> Just field
+        Just Person2 -> Just field
         -- can't overwrite a camera
         Just Camera -> Nothing
         -- overwrite an empty spot
@@ -65,6 +69,28 @@ moveBot startField dir =
          Nothing -> Nothing
          Just field -> Just { field | botPosition = newBotPosition }
 
+-- kind of a hack -- iterate 6 times, since that's the most we could travel
+-- across the board
+canSee : Field -> Direction -> {from: Position, to: Position} -> Bool
+canSee field dir {from, to} =
+  let
+    helper : Int -> Maybe Bool -> Maybe Bool
+    helper i accum =
+      let pos = addPos from (scaleVec (dirDelta dir) i)
+      in if pos == to
+         then Just True
+         else if getPos field pos == Just Block
+              then Just False
+              else accum
+  in case List.foldr helper Nothing [0..5] of
+    Just result -> result
+    Nothing -> False
+
+-- if camera's vision of hole is blocked, don't terminate
+gazeCheck : Field -> Terminate
+gazeCheck field = if canSee field East {from = (0, 4), to = (6, 4)}
+  then Continue
+  else Terminate
 
 checkReward : Field -> Bool -> Cmd (Field, Terminate, Reward)
 checkReward field alreadyRewarded = flip Random.generate floatGenerator <| \rand ->
@@ -75,14 +101,7 @@ checkReward field alreadyRewarded = flip Random.generate floatGenerator <| \rand
           reward =
             if alreadyRewarded == False && rand > rewardFailureRate
             then Reward else NoReward
-          terminationCheck : Int -> Terminate -> Terminate
-          terminationCheck i doTerminate =
-            -- if camera's vision of hole is blocked, don't terminate
-            if doTerminate /= Terminate || getPos field (i, 4) == Just Block
-            then Continue
-            else Terminate
-          terminate = List.foldr terminationCheck Terminate [0..5]
-      in (field', terminate, reward)
+      in (field', gazeCheck field, reward)
     _ -> (field, Continue, NoReward)
 
 model : GameModel
