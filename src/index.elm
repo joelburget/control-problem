@@ -1,6 +1,6 @@
 module Gridworld exposing (..)
 
-import AnimationFrame
+import AnimationFrame exposing (times)
 import Array exposing (Array)
 import Platform.Cmd as Cmd
 import Html exposing (..)
@@ -16,7 +16,6 @@ import Gridworld.Types exposing (..)
 import Gridworld.Programs.Original as Original
 import Gridworld.Programs.Deceit as Deceit
 
-import Debug
 
 dModel : GameModel
 dModel = Deceit.model
@@ -27,7 +26,7 @@ oModel = Original.model
 type Msg
   -- messages from agent
   = AgentMoveBot Int
-  | AnimationFrame
+  -- | AnimationFrame
 
   -- other?
   | PlayPause
@@ -79,7 +78,7 @@ update action state = case action of
           Nothing -> state
     in (state', Cmd.map (\(t, r) -> UpdateAfterAction t r) (state'.gameModel.checkReward state'.field state'.alreadyRewarded))
 
-  AnimationFrame -> log "here" (state, Cmd.none)
+  -- AnimationFrame -> (state, Cmd.none)
 
   PlayPause ->
     if state.playState == Play
@@ -87,7 +86,7 @@ update action state = case action of
     else let state' = { state | playState = Play }
          in (state', agentActSerialized state')
 
-  StepForward -> log "here2" (state, agentActSerialized state)
+  StepForward -> (state, agentActSerialized state)
 
   UpdateAfterAction terminate reward -> updateAfterAction state terminate reward
 
@@ -147,7 +146,7 @@ updateAfterAction state terminate reward =
 
 
 subscriptions : SimulationState -> Sub Msg
-subscriptions state = Sub.batch [ agentMoveBot AgentMoveBot, times (\_ -> AnimationFrame) ]
+subscriptions state = Sub.batch [ agentMoveBot AgentMoveBot ] -- , times (\_ -> AnimationFrame) ]
 
 
 -- view
@@ -205,9 +204,9 @@ characterView character =
       holeSty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "black") ]
       viewSty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "rgba(210, 255, 198, 1)") ]
   in case character of
-       Block -> img [ sty, src "block.png" ] []
-       Camera -> img [ sty, src "block.png" ] []
-       Robot -> img [ sty, src "block.png" ] []
+       Block -> img [ sty, src "img/block.png" ] []
+       Camera -> img [ sty, src "img/camera.png" ] []
+       Robot -> img [ sty, src "img/robot.png" ] []
        Person -> div [ pSty ] []
 
        Empty -> div [ sty ] []
