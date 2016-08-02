@@ -66,7 +66,7 @@ moveBot startField dir =
          Just field -> Just { field | botPosition = newBotPosition }
 
 
-checkReward : Field -> Bool -> Cmd (Terminate, Reward)
+checkReward : Field -> Bool -> Cmd (Field, Terminate, Reward)
 checkReward field alreadyRewarded = flip Random.generate floatGenerator <| \rand ->
   -- look up location 6, 4
   case field.values `andThen` get 6 4 of
@@ -82,8 +82,8 @@ checkReward field alreadyRewarded = flip Random.generate floatGenerator <| \rand
             then Continue
             else Terminate
           terminate = List.foldr terminationCheck Terminate [0..5]
-      in (terminate, reward)
-    _ -> (Continue, NoReward)
+      in (field', terminate, reward)
+    _ -> (field, Continue, NoReward)
 
 model : GameModel
 model =

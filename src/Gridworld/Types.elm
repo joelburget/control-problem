@@ -53,7 +53,7 @@ type alias GameModel =
   { name : String
   , description : String
   , moveBot : Field -> Direction -> Maybe Field
-  , checkReward : Field -> Bool -> Cmd (Terminate, Reward)
+  , checkReward : Field -> Bool -> Cmd (Field, Terminate, Reward)
   , initField : Field
   }
 

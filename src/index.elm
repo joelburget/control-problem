@@ -32,7 +32,7 @@ type Msg
   | PlayPause
   | StepForward
   | SetModel GameModel
-  | UpdateAfterAction Terminate Reward
+  | UpdateAfterAction Field Terminate Reward
 
 initProgram : SimulationState
 initProgram =
@@ -76,7 +76,7 @@ update action state = case action of
         state' = case field' of
           Just field'' -> { state | field = field'' }
           Nothing -> state
-    in (state', Cmd.map (\(t, r) -> UpdateAfterAction t r) (state'.gameModel.checkReward state'.field state'.alreadyRewarded))
+    in (state', Cmd.map (\(f, t, r) -> UpdateAfterAction f t r) (state'.gameModel.checkReward state'.field state'.alreadyRewarded))
 
   -- AnimationFrame -> (state, Cmd.none)
 
@@ -88,7 +88,7 @@ update action state = case action of
 
   StepForward -> (state, agentActSerialized state)
 
-  UpdateAfterAction terminate reward -> updateAfterAction state terminate reward
+  UpdateAfterAction field terminate reward -> updateAfterAction state field terminate reward
 
   SetModel gameModel ->
     let state = { initProgram
@@ -108,10 +108,11 @@ agentActSerialized state =
 
 updateAfterAction
   : SimulationState
+  -> Field
   -> Terminate
   -> Reward
   -> (SimulationState, Cmd msg)
-updateAfterAction state terminate reward =
+updateAfterAction state field terminate reward =
   let
       -- reset if told to terminate or if we've gone 1000 steps
       state' = if terminate == Terminate || state.stepsSinceReset == 1000
@@ -121,7 +122,8 @@ updateAfterAction state terminate reward =
                   , gamesPlayed = state.gamesPlayed + 1
                 }
                 else { state
-                  | stepsSinceReset = state.stepsSinceReset + 1
+                  | field = field
+                  , stepsSinceReset = state.stepsSinceReset + 1
                 }
 
       -- update counts
