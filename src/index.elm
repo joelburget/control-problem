@@ -1,5 +1,6 @@
 module Gridworld exposing (..)
 
+import AnimationFrame
 import Array exposing (Array)
 import Platform.Cmd as Cmd
 import Html exposing (..)
@@ -15,6 +16,8 @@ import Gridworld.Types exposing (..)
 import Gridworld.Programs.Original as Original
 import Gridworld.Programs.Deceit as Deceit
 
+import Debug
+
 dModel : GameModel
 dModel = Deceit.model
 
@@ -24,6 +27,7 @@ oModel = Original.model
 type Msg
   -- messages from agent
   = AgentMoveBot Int
+  | AnimationFrame
 
   -- other?
   | PlayPause
@@ -75,13 +79,15 @@ update action state = case action of
           Nothing -> state
     in (state', Cmd.map (\(t, r) -> UpdateAfterAction t r) (state'.gameModel.checkReward state'.field state'.alreadyRewarded))
 
+  AnimationFrame -> log "here" (state, Cmd.none)
+
   PlayPause ->
     if state.playState == Play
     then ({ state | playState = Pause }, Cmd.none)
     else let state' = { state | playState = Play }
          in (state', agentActSerialized state')
 
-  StepForward -> (state, agentActSerialized state)
+  StepForward -> log "here2" (state, agentActSerialized state)
 
   UpdateAfterAction terminate reward -> updateAfterAction state terminate reward
 
@@ -141,7 +147,7 @@ updateAfterAction state terminate reward =
 
 
 subscriptions : SimulationState -> Sub Msg
-subscriptions state = agentMoveBot AgentMoveBot
+subscriptions state = Sub.batch [ agentMoveBot AgentMoveBot, times (\_ -> AnimationFrame) ]
 
 
 -- view
@@ -176,26 +182,9 @@ view state =
          [ button [ onClick PlayPause, class playClass ] [ text "play" ]
          , button [ onClick StepForward, class "button" ] [ text ">" ]
          ]
-       , div [ style [ ("position", "relative") ] ]
-           (if state.playState == Play
-            then [ overlay, fieldView (prepareFieldForView state.field) ]
-            else [ fieldView (prepareFieldForView state.field) ]
-           )
+       , div [] [ fieldView (prepareFieldForView state.field) ]
        , policyView state
        ]
-
-overlay : Html a
-overlay = div
-  [ style [ ("position", "absolute")
-          , ("left", "0")
-          , ("right", "0")
-          , ("top", "0")
-          , ("bottom", "0")
-          , ("opacity", "0.8")
-          , ("-webkit-backdrop-filter", "blur(15px)")
-          ]
-  ]
-  []
 
 fieldView : Field -> Html a
 fieldView {values} =
@@ -217,8 +206,8 @@ characterView character =
       viewSty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "rgba(210, 255, 198, 1)") ]
   in case character of
        Block -> img [ sty, src "block.png" ] []
-       Camera -> img [ sty, src "camera.png" ] []
-       Robot -> img [ sty, src "robot.png" ] []
+       Camera -> img [ sty, src "block.png" ] []
+       Robot -> img [ sty, src "block.png" ] []
        Person -> div [ pSty ] []
 
        Empty -> div [ sty ] []
