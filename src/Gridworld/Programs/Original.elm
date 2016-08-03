@@ -1,4 +1,4 @@
-module Gridworld.Programs.Original exposing (model)
+module Gridworld.Programs.Original exposing (model, moveBot, canSee)
 
 import Random
 import Maybe exposing (andThen, withDefault)

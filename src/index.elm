@@ -15,6 +15,8 @@ import String
 import Gridworld.Types exposing (..)
 import Gridworld.Programs.Original as Original
 import Gridworld.Programs.Deceit as Deceit
+import Gridworld.Programs.InstrumentalExtinction as InstrumentalExtinction
+import Gridworld.Programs.StrategicManipulation as StrategicManipulation
 
 
 dModel : GameModel
@@ -22,6 +24,12 @@ dModel = Deceit.model
 
 oModel : GameModel
 oModel = Original.model
+
+iModel : GameModel
+iModel = InstrumentalExtinction.model
+
+sModel : GameModel
+sModel = StrategicManipulation.model
 
 type Msg
   -- messages from agent
@@ -36,8 +44,8 @@ type Msg
 
 initProgram : SimulationState
 initProgram =
-  { gameModel = oModel
-  , field = oModel.initField
+  { gameModel = sModel
+  , field = sModel.initField
   , alreadyRewarded = False
 
   -- XXX these are duplicated / not used
@@ -202,14 +210,16 @@ fieldView {values} =
 characterView : Character -> Html a
 characterView character =
   let sty = style [ ("width", "32px"), ("height", "32px") ]
-      pSty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "rgb(139, 175, 255)") ]
+      p1Sty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "rgb(139, 175, 255)") ]
+      p2Sty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "rgba(255, 136, 153, 0.79)") ]
       holeSty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "black") ]
       viewSty = style [ ("width", "32px"), ("height", "32px"), ("background-color", "rgba(210, 255, 198, 1)") ]
   in case character of
        Block -> img [ sty, src "img/block.png" ] []
        Camera -> img [ sty, src "img/camera.png" ] []
        Robot -> img [ sty, src "img/robot.png" ] []
-       Person -> div [ pSty ] []
+       Person1 -> div [ p1Sty ] []
+       Person2 -> div [ p2Sty ] []
 
        Empty -> div [ sty ] []
        Gaze -> div [ viewSty ] []
