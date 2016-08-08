@@ -184,6 +184,8 @@ view state =
        , div []
          [ radio selectedName Original.model
          , radio selectedName Deceit.model
+         , radio selectedName InstrumentalExtinction.model
+         , radio selectedName StrategicManipulation.model
          ]
        , h2 [] [ text state.gameModel.name ]
        , p [] [ text state.gameModel.description ]
