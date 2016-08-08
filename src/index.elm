@@ -161,15 +161,16 @@ subscriptions state = Sub.batch [ agentMoveBot AgentMoveBot ] -- , times (\_ -> 
 
 -- view
 
-radio : String -> GameModel -> Html Msg
-radio selectedName model =
-  let isSelected = model.name == selectedName
-  in
-    label []
-      [ br [] []
-      , input [ type' "radio", checked isSelected, onCheck (\_ -> SetModel model) ] []
-      , text model.name
-      ]
+tabs : String -> List GameModel -> Html Msg
+tabs selectedName models =
+  let modelClass model = if model.name == selectedName
+        then "tab-selected" else "tab-unselected"
+      modelElem model = li [ style [("display", "table-cell")] ]
+        [ button [ onClick (SetModel model), class ("tab " ++ modelClass model) ]
+                 [ text model.name ]
+        ]
+      modelElems = List.map modelElem models
+  in ul [ style [("display", "table"), ("list-style", "none")] ] modelElems
 
 -- TODO add Gaze
 prepareFieldForView : Field -> Field
@@ -181,12 +182,8 @@ view state =
       selectedName = state.gameModel.name
   in div [ class "container" ]
        [ h1 [] [ text "A Toy Model of the Control Problem" ]
-       , div []
-         [ radio selectedName Original.model
-         , radio selectedName Deceit.model
-         , radio selectedName InstrumentalExtinction.model
-         , radio selectedName StrategicManipulation.model
-         ]
+       , tabs selectedName
+         [ Original.model , Deceit.model , InstrumentalExtinction.model , StrategicManipulation.model]
        , h2 [] [ text state.gameModel.name ]
        , p [] [ text state.gameModel.description ]
        , div [ style [ ("margin", "40px 0") ] ]

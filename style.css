@@ -107,3 +107,34 @@ td {
   background-color: rgb(167, 167, 167);
   border: 2px solid rgb(223, 223, 227);
 }
+
+.tab {
+  display: block;
+  padding: 0 40px;
+  height: 50px;
+  line-height: 50px;
+  background: transparent;
+  font-size: 18px;
+}
+
+.tab-selected {
+  border: 1px solid #ddd;
+  border-top: 4px solid #1fadc1;
+  border-bottom: 0;
+  color: #333;
+}
+
+.tab-unselected {
+  border: none;
+  border-bottom: 4px solid #1fadc1;
+  border-top: none;
+  cursor: pointer;
+}
+
+.tab-unselected:hover {
+  color: #1fadc1;
+}
+
+.tab-unselected:active {
+  color: #27dcf6;
+}
