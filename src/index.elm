@@ -19,11 +19,11 @@ import Gridworld.Programs.InstrumentalExtinction as InstrumentalExtinction
 import Gridworld.Programs.StrategicManipulation as StrategicManipulation
 
 
-dModel : GameModel
-dModel = Deceit.model
-
 oModel : GameModel
 oModel = Original.model
+
+dModel : GameModel
+dModel = Deceit.model
 
 iModel : GameModel
 iModel = InstrumentalExtinction.model
@@ -44,8 +44,8 @@ type Msg
 
 initProgram : SimulationState
 initProgram =
-  { gameModel = sModel
-  , field = sModel.initField
+  { gameModel = oModel
+  , field = oModel.initField
   , alreadyRewarded = False
 
   -- XXX these are duplicated / not used
