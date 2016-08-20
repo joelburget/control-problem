@@ -73,6 +73,8 @@ type alias SimulationState =
   , gamesPlayed : Int
   , timesRewarded : Int
 
+  , averageRewards : Array Float
+
   -- TODO also consider adding these as adjustable params (not updated as part
   -- of the algorithm):
 

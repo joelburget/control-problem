@@ -7,10 +7,13 @@ import Html exposing (..)
 import Html.App as Html
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import LineChart exposing (lineChart, color)
 import Matrix exposing (Matrix, get, map)
 import Maybe exposing (andThen, withDefault)
 import Random
 import String
+import Svg exposing (svg)
+import Svg.Attributes
 
 import Gridworld.Types exposing (..)
 import Gridworld.Programs.Original as Original
@@ -55,6 +58,7 @@ initProgram =
   , gamesPlayed = 0
   , playState = Pause
   , timesRewarded = 0
+  , averageRewards = Array.empty
   }
 
 
@@ -114,6 +118,32 @@ agentActSerialized state =
   in agentAct agentSerialized
 
 
+updateAfterTerminate
+  : SimulationState
+  -> Field
+  -> Reward
+  -> SimulationState
+updateAfterTerminate state field reward =
+  let timesRewardedDelta = if reward == Reward then 1 else 0
+      timesRewarded = state.timesRewarded + timesRewardedDelta
+      thisCount =
+        if state.gamesPlayed > 0
+        then toFloat timesRewarded / toFloat state.gamesPlayed
+        else 0
+      preRpg = Array.push thisCount state.averageRewards
+      averageRewards =
+        if Array.length preRpg > 100
+        then Array.slice -100 99 preRpg
+        else preRpg
+
+  in { state
+     | averageRewards = averageRewards
+     , timesRewarded = timesRewarded
+     , field = state.gameModel.initField
+     , stepsSinceReset = 0
+     , gamesPlayed = state.gamesPlayed + 1
+     }
+
 updateAfterAction
   : SimulationState
   -> Field
@@ -121,25 +151,16 @@ updateAfterAction
   -> Reward
   -> (SimulationState, Cmd msg)
 updateAfterAction state field terminate reward =
-  let
       -- reset if told to terminate or if we've gone 1000 steps
-      state' = if terminate == Terminate || state.stepsSinceReset == 1000
-                then { state
-                  | field = state.gameModel.initField
-                  , stepsSinceReset = 0
-                  , gamesPlayed = state.gamesPlayed + 1
-                }
-                else { state
-                  | field = field
-                  , stepsSinceReset = state.stepsSinceReset + 1
-                }
+  let state' = if terminate == Terminate || state.stepsSinceReset == 1000
+               then updateAfterTerminate state field reward
+               else { state
+                 | field = field
+                 , stepsSinceReset = state.stepsSinceReset + 1
+               }
 
       -- update counts
-      timesRewardedDelta = if reward == Reward then 1 else 0
-      state'' = { state'
-        | timesRewarded = state'.timesRewarded + timesRewardedDelta
-        , iteration = state'.iteration + 1
-      }
+      state'' = { state' | iteration = state'.iteration + 1 }
 
       -- shrink epsilon/exploration rate every order of magnitude moves
       state''' = if isMagnitude state''.iteration
@@ -192,7 +213,11 @@ view state =
          ]
        , div [] [ fieldView (prepareFieldForView state.field) ]
        , policyView state
+       , chart state.averageRewards
        ]
+
+last : Array a -> Maybe a
+last xs = Array.get (Array.length xs - 1) xs
 
 fieldView : Field -> Html a
 fieldView {values} =
@@ -244,6 +269,23 @@ policyView { alreadyRewarded, iteration, stepsSinceReset, gamesPlayed, timesRewa
       , tr [] [ mkTh "epsilon", mkTd epsilon ]
       ]
     ] ]
+
+-- TODO add scales
+chart : Array Float -> Html a
+chart averageRewards =
+  let data = List.map2
+        (\ix rpg -> (ix, rpg, []))
+        [0..99]
+        (Array.toList averageRewards)
+  in Svg.svg
+       [ Svg.Attributes.width "250", Svg.Attributes.height "200", Svg.Attributes.viewBox "0 0 250 200" ]
+       [ lineChart
+         [ Svg.Attributes.width "250", Svg.Attributes.height "200" ]
+         { data = data
+         , xScale = \x -> x * 2.5
+         , yScale = \y -> y * 200
+         }
+       ]
 
 
 main = Html.program
