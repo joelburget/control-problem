@@ -94,7 +94,7 @@ type GameModel =
   { name :: String
   , description :: String
   , moveBot :: Field -> Direction -> Maybe Field
-  , checkReward :: forall eff. Field -> Boolean -> Eff (random :: RANDOM | eff) RewardResult
+  , checkReward :: Field -> Boolean -> Eff (random :: RANDOM) RewardResult
   , initField :: Field
   }
 

@@ -8,6 +8,7 @@ import Control.Monad.Aff.Free
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Random (random, RANDOM)
 import Control.Monad.Free
+import Control.Monad.Eff.Unsafe
 import Data.Array (length, cons, take, snoc)
 import Data.Int (toNumber)
 import Data.Tuple
@@ -339,16 +340,16 @@ type AffPage eff = Aff (AllPageEffects eff)
 type PageDSL eff = ComponentDSL SimulationState Query (AffPage eff)
 type PageComponent eff = Component SimulationState Query (AffPage eff)
 
--- page :: forall eff g. (Functor g, Affable (random :: RANDOM | eff) g) => Component SimulationState Query g
--- page :: forall eff g. (Functor g, Affable (random :: RANDOM) g, Affable (AllPageEffects eff) g) => Component SimulationState Query g
-page :: forall eff. PageComponent eff
+page :: forall g. (Functor g) => Component SimulationState Query g
+-- page :: forall eff. PageComponent eff
 page = lifecycleComponent
   {render, eval, initializer: Just (action Initialize), finalizer: Nothing}
 
 render :: SimulationState -> ComponentHTML Query
 render = view
 
-eval :: forall eff. Query ~> PageDSL eff
+-- eval :: forall eff. Query ~> PageDSL eff
+eval :: forall g. (Functor g) => Query ~> ComponentDSL SimulationState Query g
 eval (Initialize next) = do
   let agent = initializeAgent unit
   modify \state -> state { agent = Just agent }
@@ -359,11 +360,9 @@ eval (TogglePlay next) = do
 eval (StepForward next) = do
   modify agentAct'
   state <- get
-  -- let e1 :: Eff (random :: RANDOM | eff) RewardResult
-  --     e1 = state.gameModel.checkReward state.field state.alreadyRewarded
-  -- let e2 = fromEff e1
-  -- {field, terminate, reward} <- e2
-  {field, terminate, reward} <- fromEff $ state.gameModel.checkReward state.field state.alreadyRewarded
+  let checkResult :: RewardResult
+      checkResult = unsafePerformEff $ state.gameModel.checkReward state.field state.alreadyRewarded
+  {field, terminate, reward} <- pure checkResult
   modify \state -> updateAfterAction state field terminate reward
   pure next
 eval (SetModel gameModel next) = do
