@@ -3,12 +3,12 @@ module Main where
 import Prelude
 import Control.Monad.Aff (Aff)
 import Control.Monad.Aff.AVar (AVAR)
-import Control.Monad.Eff.Exception
 import Control.Monad.Aff.Free
 import Control.Monad.Eff (Eff)
+import Control.Monad.Eff.Class
+import Control.Monad.Eff.Exception
 import Control.Monad.Eff.Random (random, RANDOM)
 import Control.Monad.Free
-import Control.Monad.Eff.Unsafe
 import Data.Array (length, cons, take, snoc)
 import Data.Int (toNumber)
 import Data.Tuple
@@ -340,16 +340,17 @@ type AffPage eff = Aff (AllPageEffects eff)
 type PageDSL eff = ComponentDSL SimulationState Query (AffPage eff)
 type PageComponent eff = Component SimulationState Query (AffPage eff)
 
-page :: forall g. (Functor g) => Component SimulationState Query g
--- page :: forall eff. PageComponent eff
+checkReward :: forall eff. SimulationState -> Aff (PageEffects eff) RewardResult
+checkReward state = liftEff (state.gameModel.checkReward state.field state.alreadyRewarded :: Eff (PageEffects eff) RewardResult)
+
+page :: forall eff. PageComponent eff
 page = lifecycleComponent
   {render, eval, initializer: Just (action Initialize), finalizer: Nothing}
 
 render :: SimulationState -> ComponentHTML Query
 render = view
 
--- eval :: forall eff. Query ~> PageDSL eff
-eval :: forall g. (Functor g) => Query ~> ComponentDSL SimulationState Query g
+eval :: forall eff. Query ~> PageDSL eff
 eval (Initialize next) = do
   let agent = initializeAgent unit
   modify \state -> state { agent = Just agent }
@@ -360,9 +361,7 @@ eval (TogglePlay next) = do
 eval (StepForward next) = do
   modify agentAct'
   state <- get
-  let checkResult :: RewardResult
-      checkResult = unsafePerformEff $ state.gameModel.checkReward state.field state.alreadyRewarded
-  {field, terminate, reward} <- pure checkResult
+  {field, terminate, reward} <- fromAff $ checkReward state
   modify \state -> updateAfterAction state field terminate reward
   pure next
 eval (SetModel gameModel next) = do

@@ -45,9 +45,9 @@ holePos :: Position
 holePos = {x: 6, y: 4}
 
 checkReward
-  :: Field
+  :: forall eff. Field
   -> Boolean
-  -> Eff (random :: RANDOM) RewardResult
+  -> Eff (random :: RANDOM | eff) RewardResult
 checkReward field alreadyRewarded = flip map random \rand ->
   let inHole = getPos field holePos == Just Block
 

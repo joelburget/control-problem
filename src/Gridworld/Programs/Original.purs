@@ -106,9 +106,9 @@ gazeCheck field = if canSee field East {from: {x: 0, y: 4}, to: {x: 6, y: 4}}
   else Terminate
 
 checkReward
-  :: Field
+  :: forall eff. Field
   -> Boolean
-  -> Eff (random :: RANDOM) RewardResult
+  -> Eff (random :: RANDOM | eff) RewardResult
 checkReward field alreadyRewarded = flip map random \rand ->
   case getPos field {x: 6, y: 4} of
     Just Block ->
