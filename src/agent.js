@@ -14,6 +14,7 @@ var spec = {
 };
 var agent = new RL.DQNAgent(env, spec);
 
+/*
 var app = Elm.Gridworld.fullscreen();
 
 app.ports.agentAct.subscribe(function(args) {
@@ -38,3 +39,4 @@ app.ports.agentLearn.subscribe(function(reward) {
 // app.ports.isMagnitude.subscribe(function(num) {
 //   return Number.isInteger(Math.log10(num));
 // });
+*/

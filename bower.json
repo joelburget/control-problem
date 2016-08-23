@@ -1,0 +1,26 @@
+{
+  "name": "control-problem",
+  "homepage": "https://github.com/joelburget/control-problem",
+  "authors": [
+    "Joel Burget <joelburget@gmail.com>"
+  ],
+  "description": "A toy model of the control problem",
+  "main": "src/index.purs",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "purescript-arrays": "^1.1.0",
+    "purescript-matrix": "^1.0.0",
+    "purescript-random": "^1.0.0",
+    "purescript-halogen": "^0.11.0",
+    "purescript-css": "^1.1.0",
+    "purescript-halogen-css": "^3.0.0"
+  }
+}
